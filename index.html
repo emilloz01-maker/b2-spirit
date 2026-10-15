@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>B-2 Spirit · Interaktiv model</title>
+<meta name="theme-color" content="#e9dfc6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas><div id="labels"></div></div>
+<header id="top">
+  <div class="kicker">Stealth-bombefly · Northrop · 1989</div>
+  <h1>B-2 Spirit <span>· Interaktiv model</span></h1>
+</header>
+<aside id="sheet">
+  <button id="handle" aria-label="Vis/skjul panel"><span></span></button>
+  <nav class="tabs">
+    <button data-tab="udforsk" class="on">Udforsk</button>
+    <button data-tab="visning">Visning</button>
+    <button data-tab="dele">Dele</button>
+    <button data-tab="finish">Farve</button>
+  </nav>
+  <section data-pane="udforsk" class="pane on">
+    <h3>Udforsk modellen</h3>
+    <label class="row">Adskilt visning <output id="exv">0 %</output></label>
+    <input type="range" id="explode" min="0" max="100" value="0">
+    <div class="btns">
+      <button id="bExplode" class="big">✦ Skil ad</button>
+      <button id="bXray" class="big">◎ Røntgen</button>
+      <button id="bLabels" class="big on">① Mærkater</button>
+      <button id="bSpin" class="big">↻ Drej</button>
+    </div>
+    <p class="hint">Træk for at dreje · knib for at zoome · to fingre for at flytte · tryk på en del. Zoom tæt på for at se navne på delene.</p>
+  </section>
+  <section data-pane="visning" class="pane">
+    <h3>Visninger</h3>
+    <div class="btns views">
+      <button data-view="iso" class="big">Iso</button>
+      <button data-view="side" class="big">Side</button>
+      <button data-view="front" class="big">Front</button>
+      <button data-view="rear" class="big">Bag</button>
+      <button data-view="top" class="big">Top</button>
+    </div>
+  </section>
+  <section data-pane="dele" class="pane"><h3>Dele</h3><ol id="partList"></ol></section>
+  <section data-pane="finish" class="pane">
+    <h3>Farve</h3>
+    <div class="swatches">
+      <button data-fin="grey" class="sw on"><i style="background:#4a4e53"></i>Standard grå</button>
+      <button data-fin="dark" class="sw"><i style="background:#2c2f33"></i>Mørk</button>
+      <button data-fin="light" class="sw"><i style="background:#7a7f85"></i>Lys</button>
+    </div>
+  </section>
+</aside>
+<aside id="specs">
+  <h3>Tekniske tegninger</h3>
+  <svg viewBox="0 0 260 100" class="draw"><g fill="none" stroke="#3b3426" stroke-width="1.2">
+    <path d="M130 12 L246 78 L238 84 L192 70 L168 86 L148 76 L130 92 L112 76 L92 86 L68 70 L22 84 L14 78 Z"/>
+    <path d="M118 30 Q130 18 142 30"/></g>
+    <text x="4" y="10">Set ovenfra · spændvidde 52,4 m</text></svg>
+  <svg viewBox="0 0 260 100" class="draw"><g fill="none" stroke="#3b3426" stroke-width="1.2">
+    <path d="M30 60 Q90 56 140 40 Q170 34 200 46 Q220 54 232 60 Q180 66 30 62 Z"/><path d="M150 64 L150 84 M80 64 L80 86"/>
+    <circle cx="150" cy="88" r="4"/><circle cx="76" cy="90" r="5"/><circle cx="86" cy="90" r="5"/></g>
+    <text x="4" y="10">Sidebillede · længde 21,0 m · højde 5,18 m</text></svg>
+  <dl>
+    <dt>Spændvidde</dt><dd>52,4 m</dd><dt>Længde</dt><dd>21,0 m</dd><dt>Højde</dt><dd>5,18 m</dd>
+    <dt>Tomvægt</dt><dd>ca. 71.700 kg</dd><dt>Maks. startvægt</dt><dd>ca. 170.600 kg</dd>
+    <dt>Motorer</dt><dd>4 × GE F118-GE-100</dd><dt>Besætning</dt><dd>2</dd>
+  </dl>
+</aside>
+<footer id="mats"><b>Materialer</b><span>Kulfiberkomposit</span><span>Titanium</span><span>Radarabsorberende belægning</span><span>Savtakkede kanter</span></footer>
+<div id="card" hidden>
+  <button id="cardX" aria-label="Luk">×</button>
+  <div class="num" id="cardNum">1</div>
+  <h2 id="cardTitle"></h2>
+  <p id="cardFn"></p>
+  <ul id="cardFacts"></ul>
+  <button id="cardFly" class="big">Zoom ind på delen</button>
+</div>
+<div id="load">Indlæser model…</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
