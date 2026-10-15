@@ -56,3 +56,27 @@ input[type=range]{width:100%;height:36px;accent-color:var(--acc)}
  #mats span{border:1px solid var(--line);padding:4px 8px;background:rgba(236,226,200,.8)}
 }
 .swatches.five{grid-template-columns:repeat(5,1fr)}.five .sw{font-size:11px}
+/* Flyv */
+.btns .fly{grid-column:1/-1;background:#3b3426;color:#f3ead3}
+#fly{display:none}
+body.flying #fly{display:block}
+body.flying #sheet,body.flying #specs,body.flying #mats,body.flying #top,body.flying #labels,body.flying #card{display:none!important}
+#hud{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;gap:14px;background:rgba(20,24,30,.55);color:#eaf2ff;padding:8px 14px;border-radius:10px;font:600 14px/1.2 system-ui,sans-serif;white-space:nowrap;z-index:20}
+#hud b{font-size:18px;font-variant-numeric:tabular-nums}
+#flyExit{position:fixed;top:calc(58px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:20;background:#f3ead3;border:1.5px solid #3b3426;padding:8px 14px;font:600 14px system-ui,sans-serif;border-radius:8px}
+#joy{position:fixed;left:calc(22px + env(safe-area-inset-left));bottom:calc(28px + env(safe-area-inset-bottom));width:140px;height:140px;border-radius:50%;background:rgba(20,24,30,.28);border:2px solid rgba(255,255,255,.7);touch-action:none;z-index:20;display:flex;align-items:center;justify-content:center}
+#knob{width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 2px 8px rgba(0,0,0,.35);pointer-events:none;transition:transform .05s}
+#thrBox{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:6px;z-index:20;background:rgba(20,24,30,.28);padding:8px;border-radius:12px;touch-action:none}
+#thrBox button{width:52px;height:46px;font:700 24px system-ui;border-radius:8px;border:0;background:rgba(255,255,255,.9)}
+#thr{writing-mode:vertical-lr;direction:rtl;height:110px;width:30px}
+#thrBox small{color:#fff;font:700 11px system-ui;letter-spacing:.1em}
+#flyHint{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);color:#1d2630;background:rgba(255,255,255,.6);padding:4px 10px;border-radius:8px;font:12px system-ui;text-align:center;z-index:19;max-width:44vw}
+#flyHint .desk{display:none}
+@media (hover:hover){#flyHint .desk{display:inline}}
+@media (orientation:landscape) and (max-height:500px){
+  #hud{font-size:12px;padding:5px 10px}#hud b{font-size:15px}
+  #flyExit{top:auto;bottom:calc(10px + env(safe-area-inset-bottom));padding:6px 10px;font-size:13px}
+  #flyHint{display:none}
+  #joy{width:120px;height:120px;bottom:16px}
+  #thr{height:70px}#thrBox button{height:38px}
+}

@@ -34,6 +34,7 @@
       <button id="bXray" class="big">◎ Røntgen</button>
       <button id="bLabels" class="big on">① Mærkater</button>
       <button id="bSpin" class="big">↻ Drej</button>
+      <button id="bFly" class="big fly">✈ Flyv</button>
     </div>
     <p class="hint">Træk for at dreje · knib for at zoome · to fingre for at flytte · tryk på en del. Zoom tæt på for at se navne på delene.</p>
   </section>
@@ -81,6 +82,13 @@
   <p id="cardFn"></p>
   <ul id="cardFacts"></ul>
   <button id="cardFly" class="big">Zoom ind på delen</button>
+</div>
+<div id="fly">
+  <div id="hud"><span>Fart <b id="hudSpd">0</b> km/t</span><span>Højde <b id="hudAlt">0</b> m</span><span>Gas <b id="hudThr">50</b> %</span></div>
+  <button id="flyExit">✕ Afslut flyvning</button>
+  <div id="joy" aria-label="Joystick"><div id="knob"></div></div>
+  <div id="thrBox"><button id="thrUp" aria-label="Mere gas">+</button><input type="range" id="thr" min="0" max="100" value="50" aria-label="Gas"><button id="thrDn" aria-label="Mindre gas">−</button><small>GAS</small></div>
+  <p id="flyHint">Op = stig · ned = dyk · til siden = drej<br><span class="desk">Piletaster/WASD · Q/E = gas · gamepad virker også</span></p>
 </div>
 <div id="load">Indlæser model…</div>
 <script type="module" src="app.js"></script>

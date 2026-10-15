@@ -325,6 +325,7 @@ camera.position.set(8, 5, 8); setView('iso'); anim.dur = 1;
 const tmp = new THREE.Vector3();
 function frame(now) {
   requestAnimationFrame(frame);
+  if (flying) { flyStep(now); renderer.render(scene, camera); return; }
   if (anim) { let k = Math.min(1, (now - anim.s) / anim.dur); const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
     camera.position.lerpVectors(anim.p0, anim.p1, e); controls.target.lerpVectors(anim.t0, anim.t1, e); if (k >= 1) anim = null; }
   explode += (explodeTarget - explode) * 0.12; if (Math.abs(explodeTarget - explode) < 0.001) explode = explodeTarget;
@@ -353,5 +354,115 @@ function frame(now) {
 requestAnimationFrame(frame);
 $('load').style.opacity = 0; setTimeout(() => $('load').remove(), 450);
 if (innerWidth < 900) $('sheet').classList.add('collapsed');
-window.__app = { parts, select, setXray, setView, flyTo, setExplode: v => { explodeTarget = v; exSlider.value = v * 100; }, camera, controls };
+
+// ================= FLYV-TILSTAND =================
+let flying = false, flyLast = 0, world = null, terrain = null, tCenter = new THREE.Vector2(1e9, 1e9);
+const flyer = new THREE.Group(); scene.add(flyer);
+const FS = { pos: new THREE.Vector3(), yaw: 0, pitch: 0, roll: 0, thr: 0.5, speed: 16, jx: 0, jy: 0 };
+const keys = {};
+function hgt(x, z) {
+  return 6 * Math.sin(x * 0.011) * Math.cos(z * 0.013) + 3.5 * Math.sin(x * 0.031 + 1.3) * Math.sin(z * 0.027 + 0.4)
+    + 1.2 * Math.sin(x * 0.09 + z * 0.07) + 9 * Math.max(0, Math.sin(x * 0.004 + 2) * Math.cos(z * 0.0045)) ** 2;
+}
+const TS = 360, TN = 110;
+function buildWorld() {
+  world = new THREE.Group(); scene.add(world);
+  const g = new THREE.PlaneGeometry(TS, TS, TN, TN); g.rotateX(-Math.PI / 2);
+  g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 3), 3));
+  terrain = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true })); world.add(terrain);
+  const cm = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+  const sg = new THREE.IcosahedronGeometry(1, 1);
+  world.userData.clouds = [];
+  for (let i = 0; i < 26; i++) {
+    const c = new THREE.Group();
+    for (let k = 0; k < 4; k++) { const m = new THREE.Mesh(sg, cm); m.scale.set(4 + Math.random() * 4, 1.6 + Math.random(), 3 + Math.random() * 3); m.position.set(k * 4 - 6, Math.random(), Math.random() * 3); c.add(m); }
+    c.position.set((Math.random() - 0.5) * TS, 28 + Math.random() * 18, (Math.random() - 0.5) * TS); world.add(c); world.userData.clouds.push(c);
+  }
+}
+function updateTerrain(cx, cz) {
+  cx = Math.round(cx / 20) * 20; cz = Math.round(cz / 20) * 20;
+  if (cx === tCenter.x && cz === tCenter.y) return; tCenter.set(cx, cz);
+  const p = terrain.geometry.attributes.position, col = terrain.geometry.attributes.color; const g0 = terrain.geometry;
+  const base = g0.userData.base || (g0.userData.base = p.array.slice());
+  for (let i = 0; i < p.count; i++) {
+    const x = base[i * 3] + cx, z = base[i * 3 + 2] + cz, h = hgt(x, z); p.setXYZ(i, x, h, z);
+    const n = Math.sin(x * 0.21) * Math.sin(z * 0.19) + Math.sin(x * 0.05 + z * 0.08);
+    let r = 0.93, gg = 0.95, b = 0.98; // sne
+    if (n > 1.1 && h < 8) { r = 0.25; gg = 0.29; b = 0.27; } // skov
+    else if (h > 12) { r = 0.98; gg = 0.99; b = 1; } else if (n < -1.3) { r = 0.62; gg = 0.66; b = 0.7; } // is/klippe
+    col.setXYZ(i, r, gg, b);
+  }
+  p.needsUpdate = true; col.needsUpdate = true; g0.computeVertexNormals(); g0.computeBoundingSphere();
+}
+const flyUI = document.getElementById('fly');
+function startFly() {
+  if (!world) buildWorld(); world.visible = true;
+  select(null); explodeTarget = explode = 0; exSlider.value = 0; setXray(false);
+  for (const p of parts) for (const pc of p.pieces) pc.obj.position.copy(pc.base);
+  flyer.add(tank); tank.position.set(0, -Y0, 0); gear.group.visible = false;
+  Object.assign(FS, { yaw: 0, pitch: 0, roll: 0, thr: 0.5, speed: 16 }); FS.pos.set(0, hgt(0, 0) + 16, 0);
+  scene.background = new THREE.Color(0xa9c3dc); scene.fog = new THREE.Fog(0xc3d4e4, 40, 170);
+  ground.visible = false; sun.castShadow = false; controls.enabled = false; camera.far = 400; camera.updateProjectionMatrix();
+  camera.position.set(-8, FS.pos.y + 3, 0);
+  document.body.classList.add('flying'); flying = true; flyLast = performance.now(); tCenter.set(1e9, 1e9);
+}
+function stopFly() {
+  flying = false; document.body.classList.remove('flying');
+  scene.add(tank); tank.position.set(0, 0, 0); gear.group.visible = true; world.visible = false; scene.background = null; scene.fog = null;
+  ground.visible = true; sun.castShadow = true; controls.enabled = true; sun.position.set(4, 10, 3); sun.target.position.set(0, 0, 0);
+  camera.position.set(8, 6, 8); controls.target.set(0, 0.3, 0); setView('iso');
+}
+$('bFly').onclick = startFly; $('flyExit').onclick = stopFly;
+// joystick
+const joy = $('joy'), knob = $('knob'); let joyId = null;
+function joyMove(e) { const r = joy.getBoundingClientRect(), R = r.width / 2; let dx = (e.clientX - r.left - R) / R, dy = (e.clientY - r.top - R) / R; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; }
+  FS.jx = dx; FS.jy = dy; knob.style.transform = `translate(${dx * R * 0.6}px,${dy * R * 0.6}px)`; }
+joy.addEventListener('pointerdown', e => { joyId = e.pointerId; joy.setPointerCapture(e.pointerId); joyMove(e); e.preventDefault(); });
+joy.addEventListener('pointermove', e => { if (e.pointerId === joyId) joyMove(e); });
+const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; FS.jx = FS.jy = 0; knob.style.transform = ''; };
+joy.addEventListener('pointerup', joyEnd); joy.addEventListener('pointercancel', joyEnd);
+const thrEl = $('thr');
+thrEl.oninput = () => { FS.thr = thrEl.value / 100; };
+$('thrUp').onclick = () => { FS.thr = Math.min(1, FS.thr + 0.1); thrEl.value = FS.thr * 100; };
+$('thrDn').onclick = () => { FS.thr = Math.max(0, FS.thr - 0.1); thrEl.value = FS.thr * 100; };
+addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if (flying && e.key.startsWith('Arrow')) e.preventDefault(); });
+addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+const fmt = n => Math.round(n).toLocaleString('da-DK');
+const qY = new THREE.Quaternion(), qtmp = new THREE.Quaternion(), fwd = new THREE.Vector3(), camWant = new THREE.Vector3(), look = new THREE.Vector3();
+function flyStep(now) {
+  const dt = Math.min(0.05, (now - flyLast) / 1000); flyLast = now;
+  let ix = FS.jx, iy = FS.jy;
+  if (keys.arrowleft || keys.a) ix = -1; if (keys.arrowright || keys.d) ix = 1;
+  if (keys.arrowup || keys.w) iy = -1; if (keys.arrowdown || keys.s) iy = 1;
+  if (keys['+'] || keys.e) FS.thr = Math.min(1, FS.thr + dt * 0.5); if (keys['-'] || keys.q) FS.thr = Math.max(0, FS.thr - dt * 0.5);
+  const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(g => g) : null;
+  if (gp) { if (Math.abs(gp.axes[0]) > 0.12) ix = gp.axes[0]; if (Math.abs(gp.axes[1]) > 0.12) iy = gp.axes[1];
+    if (gp.buttons[7]?.pressed || gp.buttons[0]?.pressed) FS.thr = Math.min(1, FS.thr + dt * 0.5); if (gp.buttons[6]?.pressed || gp.buttons[1]?.pressed) FS.thr = Math.max(0, FS.thr - dt * 0.5); }
+  thrEl.value = FS.thr * 100;
+  // op på joystick = stig (iy negativ)
+  FS.pitch += (-iy * 0.9 - FS.pitch * (iy === 0 ? 0.6 : 0)) * dt; FS.pitch = THREE.MathUtils.clamp(FS.pitch, -0.7, 0.7);
+  FS.roll += (ix * 0.85 - FS.roll) * Math.min(1, dt * 2.5);
+  FS.yaw -= FS.roll * 0.75 * dt;
+  const target = 9 + FS.thr * 22 - FS.pitch * 4; FS.speed += (target - FS.speed) * dt * 0.6;
+  qY.setFromEuler(new THREE.Euler(FS.roll, FS.yaw, FS.pitch, 'YZX'));
+  fwd.set(1, 0, 0).applyQuaternion(qY); FS.pos.addScaledVector(fwd, FS.speed * dt);
+  const floor = hgt(FS.pos.x, FS.pos.z) + 3;
+  if (FS.pos.y < floor + 4) { FS.pitch += (floor + 4 - FS.pos.y) * 0.25 * dt; } // blød optræk
+  if (FS.pos.y < floor) FS.pos.y += (floor - FS.pos.y) * Math.min(1, dt * 8);
+  if (FS.pos.y > 140) FS.pos.y = 140;
+  flyer.position.copy(FS.pos); flyer.quaternion.copy(qY);
+  // følgekamera
+  qtmp.setFromEuler(new THREE.Euler(0, FS.yaw, 0, 'YZX'));
+  camWant.set(-7.5, 2.6 - FS.pitch * 2, 0).applyQuaternion(qtmp).add(FS.pos);
+  camWant.y = Math.max(camWant.y, hgt(camWant.x, camWant.z) + 1.5);
+  camera.position.lerp(camWant, Math.min(1, dt * 3.5));
+  look.set(4, FS.pitch * 2.5 - 0.2, 0).applyQuaternion(qtmp).add(FS.pos); camera.lookAt(look);
+  camera.up.set(0, 1, 0);
+  updateTerrain(FS.pos.x, FS.pos.z);
+  sun.position.copy(FS.pos).add(new THREE.Vector3(30, 60, 20)); sun.target.position.copy(FS.pos); sun.target.updateMatrixWorld();
+  for (const c of world.userData.clouds) { const dx = c.position.x - FS.pos.x, dz = c.position.z - FS.pos.z; if (Math.abs(dx) > TS / 2) c.position.x -= Math.sign(dx) * TS; if (Math.abs(dz) > TS / 2) c.position.z -= Math.sign(dz) * TS; }
+  $('hudSpd').textContent = fmt(FS.speed * 36); $('hudAlt').textContent = fmt(FS.pos.y * 10); $('hudThr').textContent = Math.round(FS.thr * 100);
+}
+
+window.__app = { FS, startFly, stopFly, get flying() { return flying; }, parts, select, setXray, setView, flyTo, setExplode: v => { explodeTarget = v; exSlider.value = v * 100; }, camera, controls };
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
